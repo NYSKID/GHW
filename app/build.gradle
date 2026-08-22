@@ -9,23 +9,19 @@ if (keystorePropsFile.exists()) {
 }
 
 android {
-    compileSdk 36
+    compileSdk 33
     namespace "com.mediatek.game"
-    
+
     defaultConfig {
         applicationId "com.mediatek.game"
         minSdk 21
-        targetSdk 36
+        targetSdk 33
         versionCode 1
         versionName "1.0"
-        
+
         // Enable vector drawable support for smooth meter rendering
         vectorDrawables.useSupportLibrary = true
-        
-        // Optimize render performance - Issue #5, #7 (GPU/CPU optimization)
-        renderscriptTargetApi 21
-        renderscriptSupportModeEnabled true
-        
+
         // Enable multidex for larger apps
         multiDexEnabled true
     }
@@ -33,13 +29,11 @@ android {
     // signing configuration: read from signing.properties, else from env vars
     signingConfigs {
         release {
-            // storeFile: prefer the path in signing.properties, else use environment variable (useful for CI)
             def storeFilePath = keystoreProps.getProperty('storeFile') ?: System.getenv('RELEASE_KEYSTORE')
             if (storeFilePath) {
                 storeFile file(storeFilePath)
             }
 
-            // passwords and alias (prefer signing.properties)
             storePassword keystoreProps.getProperty('storePassword') ?: System.getenv('KEYSTORE_PASSWORD')
             keyAlias     keystoreProps.getProperty('keyAlias')     ?: System.getenv('KEY_ALIAS')
             keyPassword  keystoreProps.getProperty('keyPassword')  ?: System.getenv('KEY_PASSWORD')
@@ -48,21 +42,12 @@ android {
 
     buildTypes {
         release {
-            // Make sure release uses the signing config
             signingConfig signingConfigs.release
-
-            // Optimizations with safe ProGuard rules - Issue #1 (APK version management)
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            
-            // Performance optimizations - Issue #2, #7, #9 (Battery and thermal management)
-            ndk {
-                debugSymbolLevel 'full'
-            }
         }
         debug {
-            // Keep debug unsigned or use debug signing (do not reuse release keystore)
             debuggable true
             minifyEnabled false
             shrinkResources false
@@ -74,14 +59,12 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
 
-    // Configure resource shrinking to preserve meter drawables
     bundle {
         language.enableSplit = false
         density.enableSplit = false
         abi.enableSplit = false
     }
 
-    // Lint options for permission handling - Issue #3, #9 (Permission restrictions)
     lintOptions {
         checkReleaseBuilds false
         disable 'MissingTranslation'
@@ -90,68 +73,22 @@ android {
 }
 
 dependencies {
-    // AndroidX multidex support for large apps
-    implementation('androidx.multidex:multidex:2.0.1') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    // Use Kotlin 2.0.0 which is compatible with AGP 8.7.3
-    implementation('org.jetbrains.kotlin:kotlin-stdlib:2.0.0') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    implementation('androidx.appcompat:appcompat:1.6.1') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    implementation('androidx.constraintlayout:constraintlayout:2.1.4') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    // Performance monitoring and lifecycle support - Issue #2, #5, #7 (Battery/thermal/GPU optimization)
-    implementation('androidx.core:core:1.13.1') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    implementation('androidx.lifecycle:lifecycle-runtime:2.8.0') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    implementation('androidx.lifecycle:lifecycle-process:2.8.0') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    // Notification support for Android 13+ (API 33+) - Issue #1, #4, #8 (In-game notifications)
-    implementation('androidx.core:core:1.13.1') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    // Real-time performance stats - Compatible with SDK 36 - Issue #5, #7 (GPU/CPU monitoring)
-    implementation('androidx.graphics:graphics-core:1.0.0-alpha04') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    // Android system services and permissions - Issue #2, #9 (Background process optimization)
-    implementation('androidx.work:work-runtime:2.9.0') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    // Permission handling for runtime permissions - Issue #3, #9 (Third-party app permissions)
-    implementation('androidx.activity:activity:1.8.1') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
-    
-    // Fragment support for permission dialogs - Issue #5, #7 (Network/WiFi optimization)
-    implementation('androidx.fragment:fragment:1.6.2') {
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    }
+    implementation 'androidx.multidex:multidex:2.0.1'
+
+    // AndroidX & support libraries
+    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // Lifecycle / runtime
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+    implementation 'androidx.activity:activity-ktx:1.6.1'
+    implementation 'androidx.fragment:fragment-ktx:1.5.5'
+
+    // WorkManager for background tasks
+    implementation 'androidx.work:work-runtime-ktx:2.8.0'
+
+    // Optional: graphics/core for advanced rendering (keep only if needed)
+    // implementation 'androidx.graphics:graphics-core:1.0.0'
 }
