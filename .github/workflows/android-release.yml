@@ -16,7 +16,9 @@ jobs:
       - name: Install Android SDK 36
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: '8.10' }
+        with: 
+          gradle-version: '8.10'
+          validation-excludes: gradle-wrapper.jar
       - name: Prepare signing key
         env:
           RELEASE_KEY_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
@@ -29,7 +31,7 @@ jobs:
             echo "$RELEASE_KEY_B64" | base64 --decode > "$GITHUB_WORKSPACE/release.keystore"
             echo "KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"; echo "KEY_ALIAS=$ALIAS" >> "$GITHUB_ENV"; echo "KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
           else
-            keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/release.keystore" -storepass android -keypass android -alias gamehelio -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=Game Helio G100, O=Game Helio, L=Unknown, ST=Unknown, C=US"
+            keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/release.keystore" -storepass android -keypass android -alias gamehelio -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=Game Helio,O=Game,C=US"
             echo "KEYSTORE_PASSWORD=android" >> "$GITHUB_ENV"; echo "KEY_ALIAS=gamehelio" >> "$GITHUB_ENV"; echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
           fi
           echo "RELEASE_KEYSTORE=$GITHUB_WORKSPACE/release.keystore" >> "$GITHUB_ENV"
@@ -90,4 +92,3 @@ jobs:
             app/build/outputs/apk/release/app-release-signed.apk
             app-release-signed.sha256
           generate_release_notes: true
-          
