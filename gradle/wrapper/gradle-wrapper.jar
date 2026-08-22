@@ -1,0 +1,6 @@
+placeholder for gradle-wrapper.jar
+
+# Note: This file is intentionally a placeholder to avoid committing large binaries unintentionally.
+# To generate the real gradle-wrapper.jar locally, run:
+#   gradle wrapper --gradle-version 8.4
+# That will produce gradle/wrapper/gradle-wrapper.jar and the necessary wrapper files.
