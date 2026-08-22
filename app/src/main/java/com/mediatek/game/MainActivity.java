@@ -19,6 +19,10 @@ public final class MainActivity extends Activity {
     private static final String ACTIVE_MSG = "Active while a supported game is running";
     private static final String INACTIVE_MSG = "Inactive — will be active during gameplay if enabled";
 
+    // Keep references to views instead of digging into decor view children later.
+    private Switch gameModeSwitch;
+    private TextView statusView;
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -36,6 +40,7 @@ public final class MainActivity extends Activity {
         // Layout container
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
+        // Note: padding is in pixels here; consider converting dp if needed.
         layout.setPadding(24, 24, 24, 24);
         layout.setBackgroundColor(Color.BLACK);
 
@@ -46,12 +51,12 @@ public final class MainActivity extends Activity {
         layout.addView(title);
 
         // Switch to enable/disable gameplay-only 120Hz mode
-        final Switch gameModeSwitch = new Switch(this);
+        gameModeSwitch = new Switch(this);
         gameModeSwitch.setText("Enable 120Hz Game Mode (gameplay only)");
         gameModeSwitch.setTextColor(Color.WHITE);
 
         // Status label to explain transient activation
-        final TextView statusView = new TextView(this);
+        statusView = new TextView(this);
         statusView.setTextColor(Color.LTGRAY);
         statusView.setTextSize(14f);
 
@@ -76,7 +81,7 @@ public final class MainActivity extends Activity {
                     GameModeController.disableGameMode(MainActivity.this);
                 }
 
-                // Update status label after action
+                // Update status label after action (read the transient active flag)
                 boolean nowActive = PreferencesHelper.isGameModeActive(MainActivity.this);
                 statusView.setText(nowActive ? ACTIVE_MSG : INACTIVE_MSG);
             }
@@ -86,19 +91,38 @@ public final class MainActivity extends Activity {
         layout.addView(statusView);
 
         // Keep previous fallback: try set surface frame rate for API 33+
+        // This fallback is best-effort and uses reflection; failures are non-fatal.
         if (Build.VERSION.SDK_INT >= 33) {
             try {
                 Display display = getWindow().getDecorView().getDisplay();
-                Method getSurfaceMethod = Display.class.getMethod("getSurface");
-                Surface surface = (Surface) getSurfaceMethod.invoke(display);
-                if (surface != null) {
-                    surface.setFrameRate(120f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
+                if (display != null) {
+                    // Some platforms expose a getSurface() method via Display; use reflection and guard thoroughly.
+                    Method getSurfaceMethod = null;
+                    try {
+                        getSurfaceMethod = Display.class.getMethod("getSurface");
+                    } catch (NoSuchMethodException ignored) {
+                        // Method missing on some devices — ignore fallback.
+                    }
+                    if (getSurfaceMethod != null) {
+                        Object maybeSurface = getSurfaceMethod.invoke(display);
+                        if (maybeSurface instanceof Surface) {
+                            Surface surface = (Surface) maybeSurface;
+                            // setFrameRate exists on Surface on API 33+, call it safely
+                            try {
+                                surface.setFrameRate(120f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
+                            } catch (Exception e) {
+                                Log.w(TAG, "Surface.setFrameRate failed", e);
+                            }
+                        }
+                    }
                 }
             } catch (Exception e) {
                 Log.w(TAG, "Surface.setFrameRate fallback failed", e);
             }
         }
 
+        // Keep layout stable and draw behind system bars where supported.
+        // Note: SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN is deprecated on newer SDKs, but kept for compatibility.
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
@@ -108,14 +132,15 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Update status label on resume in case transient active state changed
+        // Update status label on resume in case transient active state changed.
+        // Use the stored reference rather than assuming decor view children order.
         try {
-            TextView statusView = (TextView) ((LinearLayout) getWindow().getDecorView()).getChildAt(1);
-            // The layout composition may vary; safeguard by re-reading the persisted transient flag
             boolean active = PreferencesHelper.isGameModeActive(this);
-            statusView.setText(active ? ACTIVE_MSG : INACTIVE_MSG);
+            if (statusView != null) {
+                statusView.setText(active ? ACTIVE_MSG : INACTIVE_MSG);
+            }
         } catch (Exception ignored) {
-            // If layout structure differs, ignore — the status was initialized in onCreate
+            // If something goes wrong, don't crash; initial text was set in onCreate.
         }
     }
 
